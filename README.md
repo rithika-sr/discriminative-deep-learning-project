@@ -2,17 +2,16 @@
 
 ---
 
+A deep learning project for automated single-object image classification using CNNs and transfer learning on a 35-class student-collected dataset.
+
+---
+
 ## 👥 Team - 3 
 
-**Rithika Sankar Rajeswari** 
-
-**Sreevarshan Sathiyamurthy** 
-
-**Meena Periasamy** 
-
-**Sahil Mohanty** 
-
-A deep learning project for automated single-object image classification using CNNs and transfer learning on a 35-class student-collected dataset.
+- Rithika Sankar Rajeswari
+- Sreevarshan Sathiyamurthy
+- Meena Periasamy
+- Sahil Mohanty
 
 ---
 
