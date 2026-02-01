@@ -1,0 +1,34 @@
+[
+  {
+    "model_name": "CustomCNN",
+    "test_accuracy": 0.9261213541030884,
+    "test_loss": 0.27808788418769836,
+    "training_time": 4405.52922,
+    "epochs_trained": 23,
+    "best_val_accuracy": 0.9289617538452148
+  },
+  {
+    "model_name": "ResNet50",
+    "test_accuracy": 0.6306068897247314,
+    "test_loss": 1.4427334070205688,
+    "training_time": 2408.407939,
+    "epochs_trained": 30,
+    "best_val_accuracy": 0.6557376980781555
+  },
+  {
+    "model_name": "MobileNetV2",
+    "test_accuracy": 0.9894459247589111,
+    "test_loss": 0.05596359074115753,
+    "training_time": 292.622367,
+    "epochs_trained": 13,
+    "best_val_accuracy": 0.9918032884597778
+  },
+  {
+    "model_name": "EfficientNetB0",
+    "test_accuracy": 0.036939315497875214,
+    "test_loss": 3.598355293273926,
+    "training_time": 251.805057,
+    "epochs_trained": 7,
+    "best_val_accuracy": 0.03551912680268288
+  }
+]
