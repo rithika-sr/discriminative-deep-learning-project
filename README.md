@@ -295,7 +295,7 @@ Training Time:    4.9 minutes
 
 ## 💻 Hardware & Environment
 
-- **Device:** MacBook Pro M3 chip
+- **Device:** MacBook Pro M5 chip
 - **Framework:** TensorFlow 2.20.0
 - **Python:** 3.13
 - **Training:** CPU (Apple Silicon optimized)
