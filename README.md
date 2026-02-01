@@ -304,7 +304,7 @@ Training Time:    4.9 minutes
 
 ## 📄 Report & Documentation
 
-- **Full Report:** [Milestone1_Report.pdf](report/Milestone1_Report.pdf)
+- **Full Report:** [Milestone1_Report.pdf](https://github.com/rithika-sr/discriminative-deep-learning-project/blob/main/report/Project%20Report%20-%20Milestone%201.pdf)
 - **Markdown Report:** [Milestone1_Report.md](report/Milestone1_Report.md)
 - **Results Visualizations:** [results/](results/)
 
