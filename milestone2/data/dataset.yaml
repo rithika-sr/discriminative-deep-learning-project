@@ -1,5 +1,5 @@
 # Multi-Object Detection Dataset
-path: /Users/rithika/Documents/Discriminative_Project/data/multi_object
+path: /Users/rithika/Documents/Discriminative_Project/milestone2/data
 train: images/train
 val: images/val
 test: images/test
