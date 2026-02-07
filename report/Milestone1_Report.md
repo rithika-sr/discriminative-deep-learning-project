@@ -221,6 +221,4 @@ All training curves and confusion matrices are available in the `/results` folde
 - MobileNetV2_confusion_matrix.png
 - EfficientNetB0_confusion_matrix.png
 
----
 
-**Report Generated:** January 31, 2026 at 08:37 PM
