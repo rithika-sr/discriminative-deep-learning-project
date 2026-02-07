@@ -5,20 +5,20 @@ from PIL import Image
 import json
 from pathlib import Path
 
-# Configuration
-PROCESSED_DATA_PATH = '/Users/rithika/Documents/Discriminative_Project/data/processed'
-MULTI_OBJECT_PATH = '/Users/rithika/Documents/Discriminative_Project/data/multi_object'
+# Configuration - CORRECTED PATHS
+PROCESSED_DATA_PATH = '/Users/rithika/Documents/Discriminative_Project/milestone1/data'
+MULTI_OBJECT_PATH = '/Users/rithika/Documents/Discriminative_Project/milestone2/data'
 OUTPUT_SIZE = (640, 640)  # Standard YOLO size
 MIN_OBJECTS = 2
 MAX_OBJECTS = 5
 IMAGES_PER_SPLIT = {
-    'train': 80,
-    'val': 15,
-    'test': 15
+    'train': 320,
+    'val': 40,
+    'test': 40
 }
 
 print("=" * 70)
-print("MULTI-OBJECT IMAGE GENERATOR FOR YOLO")
+print("MULTI-OBJECT IMAGE GENERATOR FOR YOLO - 400 IMAGES")
 print("=" * 70)
 
 # Get all class folders
@@ -33,6 +33,8 @@ class_to_id = {class_name: idx for idx, class_name in enumerate(class_folders)}
 id_to_class = {idx: class_name for idx, class_name in enumerate(class_folders)}
 
 print(f"\nClass mapping created: {len(class_to_id)} classes")
+print(f"Source data: {PROCESSED_DATA_PATH}")
+print(f"Output data: {MULTI_OBJECT_PATH}")
 
 def load_random_object(class_name, split='train'):
     """Load a random image from a class folder"""
@@ -181,7 +183,7 @@ def generate_dataset():
             
             total_generated += 1
             
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 20 == 0:
                 print(f"  Generated {i + 1}/{num_images} images ({len(bboxes)} objects in last image)")
         
         print(f"✓ Completed {split} set: {num_images} images")

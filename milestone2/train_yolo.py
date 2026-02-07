@@ -9,14 +9,14 @@ DATASET_YAML = os.path.join(PROJECT_ROOT, 'milestone2/data/dataset.yaml')
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'milestone2/runs')
 MODEL_SAVE_PATH = os.path.join(PROJECT_ROOT, 'milestone2/models')
 
-# Training parameters
-EPOCHS = 50
+# Training parameters - UPDATED FOR 400 IMAGES
+EPOCHS = 100  # Increased from 50 to 100
 BATCH_SIZE = 16
 IMG_SIZE = 640
 MODEL_SIZE = 'yolov8s.pt'  # Options: yolov8n.pt (nano), yolov8s.pt (small), yolov8m.pt (medium)
 
 print("=" * 70)
-print("YOLO TRAINING SCRIPT - MILESTONE 2")
+print("YOLO TRAINING SCRIPT - MILESTONE 2 (400 IMAGES)")
 print("=" * 70)
 
 # Verify dataset.yaml exists
@@ -45,6 +45,9 @@ print(f"Model: {MODEL_SIZE}")
 print(f"Epochs: {EPOCHS}")
 print(f"Batch size: {BATCH_SIZE}")
 print(f"Image size: {IMG_SIZE}")
+print(f"Training images: 320")
+print(f"Validation images: 40")
+print(f"Test images: 40")
 print(f"Output directory: {OUTPUT_DIR}")
 
 print("\n" + "=" * 70)
@@ -53,14 +56,14 @@ print("=" * 70)
 
 # Load pre-trained YOLO model
 model = YOLO(MODEL_SIZE)
-print(f"✓ Loaded {MODEL_SIZE} with ImageNet pre-trained weights")
+print(f"✓ Loaded {MODEL_SIZE} with pre-trained weights")
 
 print("\n" + "=" * 70)
 print("STARTING TRAINING")
 print("=" * 70)
-print("This will take 1-2 hours on M3 MacBook...")
-print("You can monitor progress in the terminal.")
-print("Training will automatically save checkpoints and use early stopping.")
+print("Expected training time: 1-2 hours on M3 MacBook")
+print("Progress will be shown below...")
+print("Training will save checkpoints every 10 epochs.")
 print("=" * 70 + "\n")
 
 # Train the model
@@ -69,9 +72,9 @@ results = model.train(
     epochs=EPOCHS,
     imgsz=IMG_SIZE,
     batch=BATCH_SIZE,
-    name='yolo_multi_object',
+    name='yolo_400images',  # Updated name
     project=OUTPUT_DIR,
-    patience=10,  # Early stopping patience
+    patience=15,  # Increased patience for 100 epochs
     save=True,
     save_period=10,  # Save checkpoint every 10 epochs
     device='mps',  # Use Apple Metal Performance Shaders (M3 GPU)
@@ -96,52 +99,62 @@ print("TRAINING COMPLETE!")
 print("=" * 70)
 
 # Get the best model path
-best_model_path = os.path.join(OUTPUT_DIR, 'yolo_multi_object/weights/best.pt')
-last_model_path = os.path.join(OUTPUT_DIR, 'yolo_multi_object/weights/last.pt')
+best_model_path = os.path.join(OUTPUT_DIR, 'yolo_400images/weights/best.pt')
+last_model_path = os.path.join(OUTPUT_DIR, 'yolo_400images/weights/last.pt')
 
 if os.path.exists(best_model_path):
-    print(f"✓ Best model saved at: {best_model_path}")
+    print(f"✓ Best model found at: {best_model_path}")
     
     # Copy best model to models folder
     import shutil
     final_model_path = os.path.join(MODEL_SAVE_PATH, 'yolo_best.pt')
     shutil.copy(best_model_path, final_model_path)
-    print(f"✓ Copied to: {final_model_path}")
-else:
+    print(f"✓ Copied best model to: {final_model_path}")
+    
+    model_to_validate = best_model_path
+elif os.path.exists(last_model_path):
     print(f"⚠ Best model not found, using last model")
-    if os.path.exists(last_model_path):
-        import shutil
-        final_model_path = os.path.join(MODEL_SAVE_PATH, 'yolo_last.pt')
-        shutil.copy(last_model_path, final_model_path)
-        print(f"✓ Copied to: {final_model_path}")
+    import shutil
+    final_model_path = os.path.join(MODEL_SAVE_PATH, 'yolo_last.pt')
+    shutil.copy(last_model_path, final_model_path)
+    print(f"✓ Copied last model to: {final_model_path}")
+    
+    model_to_validate = last_model_path
+else:
+    print("ERROR: No model found!")
+    exit(1)
 
 print("\n" + "=" * 70)
 print("VALIDATING MODEL ON TEST SET")
 print("=" * 70)
 
 # Validate the model
-model = YOLO(best_model_path if os.path.exists(best_model_path) else last_model_path)
+model = YOLO(model_to_validate)
 metrics = model.val(data=DATASET_YAML, split='test')
 
 print("\n" + "=" * 70)
-print("TEST SET RESULTS")
+print("FINAL TEST SET RESULTS")
 print("=" * 70)
-print(f"mAP@0.5: {metrics.box.map50:.4f}")
-print(f"mAP@0.5:0.95: {metrics.box.map:.4f}")
-print(f"Precision: {metrics.box.mp:.4f}")
-print(f"Recall: {metrics.box.mr:.4f}")
+print(f"mAP@0.5:     {metrics.box.map50:.4f} ({metrics.box.map50*100:.2f}%)")
+print(f"mAP@0.5:0.95: {metrics.box.map:.4f} ({metrics.box.map*100:.2f}%)")
+print(f"Precision:    {metrics.box.mp:.4f} ({metrics.box.mp*100:.2f}%)")
+print(f"Recall:       {metrics.box.mr:.4f} ({metrics.box.mr*100:.2f}%)")
 
 print("\n" + "=" * 70)
 print("TRAINING SUMMARY")
 print("=" * 70)
-print(f"✓ Model trained for {EPOCHS} epochs (or until early stopping)")
-print(f"✓ Best model: {final_model_path}")
-print(f"✓ Training plots: {OUTPUT_DIR}/yolo_multi_object/")
-print(f"✓ Results:")
-print(f"  - mAP@0.5: {metrics.box.map50:.4f}")
-print(f"  - mAP@0.5:0.95: {metrics.box.map:.4f}")
+print(f"✓ Dataset: 400 images (320 train, 40 val, 40 test)")
+print(f"✓ Model trained for up to {EPOCHS} epochs")
+print(f"✓ Best model saved: {final_model_path}")
+print(f"✓ Training plots saved: {OUTPUT_DIR}/yolo_400images/")
+print(f"✓ Final Performance:")
+print(f"  - mAP@0.5: {metrics.box.map50*100:.2f}%")
+print(f"  - mAP@0.5:0.95: {metrics.box.map*100:.2f}%")
+print(f"  - Precision: {metrics.box.mp*100:.2f}%")
+print(f"  - Recall: {metrics.box.mr*100:.2f}%")
+
 print("\n" + "=" * 70)
 print("ALL DONE! ✓")
 print("=" * 70)
-print("\nNext step: Build detection pipeline to test on new images!")
-print("Training curves and confusion matrix saved in:", OUTPUT_DIR)
+print("\nNext step: Build detection pipeline!")
+print(f"View detailed results at: {OUTPUT_DIR}/yolo_400images/")
