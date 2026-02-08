@@ -18,7 +18,7 @@ IMAGES_PER_SPLIT = {
 }
 
 print("=" * 70)
-print("MULTI-OBJECT IMAGE GENERATOR FOR YOLO - 400 IMAGES")
+print("MULTI-OBJECT IMAGE GENERATOR - ZERO OVERLAP VERSION")
 print("=" * 70)
 
 # Get all class folders
@@ -53,14 +53,14 @@ def load_random_object(class_name, split='train'):
     except:
         return None, None
 
-def resize_object(img, max_size=200):
-    """Resize object to fit in composite image"""
+def resize_object(img, max_size=180):
+    """Resize object to fit in composite image - slightly smaller for no overlap"""
     # Keep aspect ratio
     img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
     return img
 
 def create_composite_image(num_objects, split='train'):
-    """Create a composite image with multiple objects"""
+    """Create a composite image with multiple objects - ZERO OVERLAP"""
     
     # Create blank canvas
     canvas = Image.new('RGB', OUTPUT_SIZE, (240, 240, 240))  # Light gray background
@@ -71,10 +71,13 @@ def create_composite_image(num_objects, split='train'):
     # Select random classes
     selected_classes = random.sample(class_folders, num_objects)
     
-    # Grid placement to avoid too much overlap
+    # Grid placement with padding to ensure zero overlap
     grid_size = int(np.ceil(np.sqrt(num_objects)))
     cell_width = OUTPUT_SIZE[0] // grid_size
     cell_height = OUTPUT_SIZE[1] // grid_size
+    
+    # Add padding between cells
+    padding = 30  # Minimum 30px gap between objects
     
     used_positions = []
     
@@ -85,58 +88,60 @@ def create_composite_image(num_objects, split='train'):
         if obj_img is None:
             continue
         
-        # Resize object
-        obj_img = resize_object(obj_img, max_size=min(cell_width, cell_height) - 20)
+        # Resize object - smaller to ensure spacing
+        obj_img = resize_object(obj_img, max_size=min(cell_width, cell_height) - padding)
         obj_width, obj_height = obj_img.size
         
-        # Find position with some randomness but avoid complete overlap
+        # Find position with ZERO overlap
         attempts = 0
-        while attempts < 50:
+        placed = False
+        
+        while attempts < 100 and not placed:
             # Random position within canvas
-            x = random.randint(10, OUTPUT_SIZE[0] - obj_width - 10)
-            y = random.randint(10, OUTPUT_SIZE[1] - obj_height - 10)
+            x = random.randint(padding, OUTPUT_SIZE[0] - obj_width - padding)
+            y = random.randint(padding, OUTPUT_SIZE[1] - obj_height - padding)
             
-            # Check if this position overlaps too much with existing objects
-            overlap = False
+            # Check for ANY overlap with existing objects
+            has_overlap = False
+            
             for (prev_x, prev_y, prev_w, prev_h) in used_positions:
-                if (x < prev_x + prev_w and x + obj_width > prev_x and
-                    y < prev_y + prev_h and y + obj_height > prev_y):
-                    # Calculate overlap area
-                    overlap_x = min(x + obj_width, prev_x + prev_w) - max(x, prev_x)
-                    overlap_y = min(y + obj_height, prev_y + prev_h) - max(y, prev_y)
-                    overlap_area = overlap_x * overlap_y
-                    obj_area = obj_width * obj_height
-                    
-                    # If overlap is more than 30%, try again
-                    if overlap_area > 0.3 * obj_area:
-                        overlap = True
-                        break
+                # Check if bounding boxes intersect AT ALL
+                if (x < prev_x + prev_w + padding and 
+                    x + obj_width + padding > prev_x and
+                    y < prev_y + prev_h + padding and 
+                    y + obj_height + padding > prev_y):
+                    has_overlap = True
+                    break
             
-            if not overlap:
+            if not has_overlap:
+                # Valid position found!
+                placed = True
                 break
             
             attempts += 1
         
-        # Paste object onto canvas
-        canvas.paste(obj_img, (x, y))
-        used_positions.append((x, y, obj_width, obj_height))
-        
-        # Calculate YOLO format bounding box (normalized)
-        x_center = (x + obj_width / 2) / OUTPUT_SIZE[0]
-        y_center = (y + obj_height / 2) / OUTPUT_SIZE[1]
-        width_norm = obj_width / OUTPUT_SIZE[0]
-        height_norm = obj_height / OUTPUT_SIZE[1]
-        
-        class_id = class_to_id[class_name]
-        
-        bounding_boxes.append({
-            'class_id': class_id,
-            'class_name': class_name,
-            'x_center': x_center,
-            'y_center': y_center,
-            'width': width_norm,
-            'height': height_norm
-        })
+        # Only place if we found a valid non-overlapping position
+        if placed:
+            # Paste object onto canvas
+            canvas.paste(obj_img, (x, y))
+            used_positions.append((x, y, obj_width, obj_height))
+            
+            # Calculate YOLO format bounding box (normalized)
+            x_center = (x + obj_width / 2) / OUTPUT_SIZE[0]
+            y_center = (y + obj_height / 2) / OUTPUT_SIZE[1]
+            width_norm = obj_width / OUTPUT_SIZE[0]
+            height_norm = obj_height / OUTPUT_SIZE[1]
+            
+            class_id = class_to_id[class_name]
+            
+            bounding_boxes.append({
+                'class_id': class_id,
+                'class_name': class_name,
+                'x_center': x_center,
+                'y_center': y_center,
+                'width': width_norm,
+                'height': height_norm
+            })
     
     return canvas, bounding_boxes
 
@@ -152,10 +157,11 @@ def generate_dataset():
     """Generate complete multi-object dataset"""
     
     print("\n" + "=" * 70)
-    print("GENERATING MULTI-OBJECT DATASET")
+    print("GENERATING MULTI-OBJECT DATASET - ZERO OVERLAP")
     print("=" * 70)
     
     total_generated = 0
+    failed_placements = 0
     
     for split, num_images in IMAGES_PER_SPLIT.items():
         print(f"\nGenerating {num_images} images for {split} set...")
@@ -167,7 +173,13 @@ def generate_dataset():
             # Create composite image
             composite_img, bboxes = create_composite_image(num_objects, split)
             
-            # Skip if no objects were placed
+            # Skip if too few objects were placed
+            if len(bboxes) < 2:
+                failed_placements += 1
+                # Try again with fewer objects
+                num_objects = 2
+                composite_img, bboxes = create_composite_image(num_objects, split)
+            
             if len(bboxes) == 0:
                 continue
             
@@ -189,19 +201,21 @@ def generate_dataset():
         print(f"✓ Completed {split} set: {num_images} images")
     
     print("\n" + "=" * 70)
-    print(f"DATASET GENERATION COMPLETE")
+    print(f"DATASET GENERATION COMPLETE - ZERO OVERLAP")
     print("=" * 70)
     print(f"Total images generated: {total_generated}")
     print(f"  Train: {IMAGES_PER_SPLIT['train']}")
     print(f"  Val: {IMAGES_PER_SPLIT['val']}")
     print(f"  Test: {IMAGES_PER_SPLIT['test']}")
+    if failed_placements > 0:
+        print(f"\n⚠️  Note: {failed_placements} images had reduced objects due to spacing constraints")
     
     return total_generated
 
 def create_dataset_yaml():
     """Create YOLO dataset configuration file"""
     
-    yaml_content = f"""# Multi-Object Detection Dataset
+    yaml_content = f"""# Multi-Object Detection Dataset - Zero Overlap
 path: {MULTI_OBJECT_PATH}
 train: images/train
 val: images/val
@@ -228,6 +242,7 @@ if __name__ == "__main__":
     print("\nStarting multi-object dataset generation...")
     print(f"Output size: {OUTPUT_SIZE}")
     print(f"Objects per image: {MIN_OBJECTS}-{MAX_OBJECTS}")
+    print(f"Overlap policy: ZERO OVERLAP (30px minimum gap)")
     
     # Generate dataset
     total = generate_dataset()
@@ -240,4 +255,4 @@ if __name__ == "__main__":
     print("=" * 70)
     print(f"\nDataset ready at: {MULTI_OBJECT_PATH}")
     print(f"Total images: {total}")
-    print("\nNext step: Train YOLOv8 model!")
+    print("Next step: Train YOLOv8 model!")

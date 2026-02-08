@@ -1,4 +1,4 @@
-# Multi-Object Detection Dataset
+# Multi-Object Detection Dataset - Zero Overlap
 path: /Users/rithika/Documents/Discriminative_Project/milestone2/data
 train: images/train
 val: images/val
